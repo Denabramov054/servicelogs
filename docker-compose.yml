@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+    servicelogs:
+        build: ./
+        ports:
+        - 8000:8000
+        depends_on:
+        - postgres
+        - migrate
+        env_file:
+        - .env
+        environment:
+        - POSTGRES_PASSWORD=123
+        networks:
+        - servicelogs
+
+    postgres:
+        restart: always
+        image: postgres:latest
+        networks:
+        - servicelogs
+        volumes:
+        - ./.docker/database/postgres/data:/var/lib/postgresql/data
+        environment:
+        - POSTGRES_PASSWORD=123
+        ports:
+        - 5436:5432
+
+    migrate:
+        restart: on-failure
+        image: migrate/migrate
+        networks:
+        - servicelogs
+        volumes:
+        - ./migrate:/migrations
+        command: ["-path", "/migrations", "-database",  "postgres://postgres:123@postgres:5432/postgres?sslmode=disable", "up"]
+        links: 
+        - postgres
+
+networks:
+    servicelogs:
+        driver: bridge
